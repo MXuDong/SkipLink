@@ -172,6 +172,8 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 	}
 
 	valueNode := node.findMinLevel().appendNext(beAppendNode)
+	s.allElementCount++
+	s.elementCount++
 
 	// graw add
 	nowHead := minHead
@@ -182,6 +184,7 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 				break
 			}
 			nowHead = nowHead.addChildNode()
+			s.allElementCount++
 		} else {
 			nowHead = nowHead.childNode
 		}
@@ -208,10 +211,24 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 		valueNode.childNode = beAppendNode
 		innerNowNode.appendNext(beAppendNode)
 		valueNode = valueNode.childNode
+		s.allElementCount++
 	}
 	return true
 }
-func (s *SkipLink) Delete() bool {
+func (s *SkipLink) Delete(sortable *Sortable) bool {
+	node, ok := s.header.findLessNode(sortable)
+	if !ok{
+		return false
+	}
+	s.elementCount--
+	nowNode := node
+	for nowNode != nil{
+		tmp := nowNode.childNode
+		nowNode.del()
+		nowNode = tmp
+		s.allElementCount--
+	}
+
 	return false
 }
 

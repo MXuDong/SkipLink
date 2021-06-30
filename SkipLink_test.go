@@ -63,4 +63,17 @@ func Test_main(t *testing.T) {
 	s.Add(&v6s)
 
 	fmt.Println(s.ToArray())
+	s.Delete(&v0s)
+
+
+	fmt.Println(s.ToArray())
+	s.Delete(&v1s)
+
+	fmt.Println(s.ToArray())
+	s.Delete(&v9s)
+
+	fmt.Println(s.ToArray())
+	s.Delete(&v0s)
+
+	fmt.Println(s.ToArray())
 }
