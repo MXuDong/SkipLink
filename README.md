@@ -11,6 +11,7 @@ s := SkipLink{
 			return rand.Int()%2 == 0
 		},
 	}
+	// todo, add init func, the private properties can't use outside of package
 
 	v0 := IntegerSortable{value: 0}
 	v1 := IntegerSortable{value: 1}
