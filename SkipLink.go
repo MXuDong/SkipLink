@@ -3,12 +3,35 @@ package SkipLink
 import "fmt"
 
 const (
+	// The default max level
 	DefaultMaxLevel = 8
 )
 
+// In the node, all value must packing to this struct.
+// Sortable is one data of the SkipLink.
+//
+// Different implementations can form different data structures, such as stacks and queues.
+// If the implementations strictly follow the requirements to achieve the sorting ability.
+//
+// The head is right of all data.
 type Sortable interface {
+
+	// If the source data should appear on the right side of the target data
+	// Such like 3 < 4, so in the list is 'head ... 3 ... 4 ... '
+	// Example:
+	// header33 - > node31 -----------> node33
+	//    |           |                   |
+	// header22 - > node21 -> node22 -> node23
+	//    |           |         |         |
+	// header11 - > node11 -> node12 -> node13 -> node14
+	// the node11 should less than node 12
 	IsLessThan(Sortable) (isLess bool)
+
+	// If the target data can't append to the SkipLink, return true.
+	// The inner implement, if datas are equal, only one will save.
 	IsEquals(Sortable) (isEquals bool)
+
+	// Return the target value.
 	Value() interface{}
 }
 
@@ -23,6 +46,8 @@ func (i *elementNode) del() {
 }
 
 // appendNext will append node to header of next-list
+// Such like link: header1 -> node1 -> node3, invoke : node1.appendNext(node2)
+//           res : header1 -> node1 -> node2 -> node3
 func (i *elementNode) appendNext(node *elementNode) *elementNode {
 	node.pre = i
 	node.next = i.next
@@ -34,6 +59,8 @@ func (i *elementNode) appendNext(node *elementNode) *elementNode {
 }
 
 // appendPre will append node to end of pre-list, if is header, it will append fail
+// Such like link : header1 -> node2 -> node3, invoke : node2.appendPre(node1)
+//           res  : header1 -> node1 -> node2 -> node3
 func (i *elementNode) appendPre(node *elementNode) bool {
 	if i.pre == nil {
 		return false
@@ -47,6 +74,15 @@ func (i *elementNode) appendPre(node *elementNode) bool {
 	return true
 }
 
+// findMinLevel will return the now node's min level node.
+// Example:
+// header33 - > node31 -----------> node33
+//    |           |                   |
+// header22 - > node21 -> node22 -> node23
+//    |           |         |         |
+// header11 - > node11 -> node12 -> node13 -> node14
+//
+// the header33's min level node is header11, the node33's min level node is node13
 func (e *elementNode) findMinLevel() *elementNode {
 	if e.parentNode == nil {
 		return e
@@ -54,7 +90,8 @@ func (e *elementNode) findMinLevel() *elementNode {
 	return e.parentNode.findMinLevel()
 }
 
-// elementNode provide vertical access
+// elementNode provide vertical access, the link node base.
+// The SkipLink's data will packing into elementNode.value.
 type elementNode struct {
 	levelHeaderNode *elementNode // now level header
 	childNode       *elementNode // the vertical next node
@@ -67,7 +104,22 @@ type elementNode struct {
 	level           uint64
 }
 
-func (h *elementNode) addChildNode() *elementNode {
+// createChildNode will create empty node and append source node.
+// Such like:
+// header2
+//    |
+// header1
+//
+// invoke the header2's createChildNode
+//
+// header3
+//    |
+// header2
+//    |
+// header1
+//
+// Note that, the createChildNode will cover origin node, it is dangerous.
+func (h *elementNode) createChildNode() *elementNode {
 	hItem := elementNode{
 		level:           h.level + 1,
 		parentNode:      h,
@@ -113,24 +165,33 @@ func (h *elementNode) findLessNode(sortable *Sortable) (*elementNode, bool) {
 	return res.findMinLevel(), false
 }
 
-// SkipLink
+// SkipLink, the skip link can use as Stack, queue, Single link by different Sortable-Implementations.
+// The maxLevel limit the high of SkipLink.
+// All of the SkipLink func is not sync, it mean that dangerous in a multi-threaded environment.
 type SkipLink struct {
+
 	// maxLevel limit the max level of skip link, if maxLevel is zero, it is seem as 1
 	// When maxLevel is 1, the skip will downgrade to the doubly link list.
 	// this value can't change after init.
 	// Default is DefaultMaxLevel
 	maxLevel uint64
+
 	// header is all link list header.
 	header *elementNode
 
 	// all valid data count
 	elementCount uint64
+
 	// all data count, more than elementCount
 	allElementCount uint64
 
 	// value packing func to packing the input value, and return the a sortable value
 	valuePackingFunc func(interface{}) (*Sortable, error)
-	hasNextLevel     func() bool
+
+	// This function determines whether the current data should continue to grow，but the grow high be limit by
+	// maxLevel, if there is no clear requirement in the implementation to formulate the return data, please try
+	// to use the default function.
+	hasNextLevel func() bool
 }
 
 func DefaultSkipLink() SkipLink {
@@ -145,15 +206,22 @@ func InitSkipLink(maxLevel uint64, valuePackingFunc func(interface{}) (*Sortable
 	}
 }
 
+// Length return the number of valid data
 func (s *SkipLink) Length() uint64 {
 	return s.elementCount
 }
+
+// AllDataCount return the number of all node, it is great than Length()
 func (s *SkipLink) AllDataCount() uint64 {
 	return s.allElementCount
 }
+
+// MaxLevel return the SkipLink's max level
 func (s *SkipLink) MaxLevel() uint64 {
 	return s.maxLevel
 }
+
+// Add the value, if not inert into the skip link, return false
 func (s *SkipLink) Add(sortable *Sortable) bool {
 	if s.header == nil {
 		s.header = &elementNode{
@@ -190,7 +258,7 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 			if nowLevel >= s.maxLevel {
 				break
 			}
-			nowHead = nowHead.addChildNode()
+			nowHead = nowHead.createChildNode()
 			s.allElementCount++
 
 		} else {
@@ -223,6 +291,8 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 	}
 	return true
 }
+
+// Delete the value, if not find into the skip link, return false
 func (s *SkipLink) Delete(sortable *Sortable) bool {
 	node, ok := s.header.findLessNode(sortable)
 	if !ok {
@@ -239,20 +309,45 @@ func (s *SkipLink) Delete(sortable *Sortable) bool {
 
 	return false
 }
-func (s *SkipLink) Get(index uint64) *Sortable {
+
+// Get return the value which index is equals
+func (s *SkipLink) Get(index uint64) Sortable {
 	if index >= s.elementCount {
 		panic(fmt.Sprintf("Range out of index for : %d", index))
 	}
 
-	nowNode := s.header.next
+	nowNode := s.header.findMinLevel().next
 	for index > 0 {
 		index--
 
 		nowNode = nowNode.next
 	}
 
-	return nowNode.value
+	return *nowNode.value
 }
+
+// Remove will remove the target value
+func (s *SkipLink) Remove(index uint64) Sortable {
+	if index >= s.elementCount {
+		panic(fmt.Sprintf("Range out of index for : %d", index))
+	}
+
+	nowNode := s.header.findMinLevel().next
+	for index > 0 {
+		index--
+		nowNode = nowNode.next
+	}
+	value := nowNode.value
+	for nowNode != nil {
+		s.allElementCount--
+		nowNode.del()
+		nowNode = nowNode.childNode
+	}
+	s.elementCount--
+	return *value
+}
+
+// ToSortableArray return the array of Sortable
 func (s *SkipLink) ToSortableArray() []Sortable {
 	value := []Sortable{}
 
@@ -265,6 +360,8 @@ func (s *SkipLink) ToSortableArray() []Sortable {
 	}
 	return value
 }
+
+// ToArray return all the value
 func (s *SkipLink) ToArray() []interface{} {
 	value := []interface{}{}
 
@@ -278,7 +375,7 @@ func (s *SkipLink) ToArray() []interface{} {
 	return value
 }
 
-// Get all sortable
+// Get all sortable, return all node as array.
 func (s *SkipLink) GetAllSortable() [][]Sortable {
 	var reses [][]Sortable
 

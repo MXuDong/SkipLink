@@ -35,7 +35,7 @@ func Test_main(t *testing.T) {
 	s := SkipLink{
 		maxLevel: DefaultMaxLevel,
 		hasNextLevel: func() bool {
-			return r.Int63()%2 == 0
+			return r.Int()%2 == 0
 		},
 	}
 
@@ -99,8 +99,13 @@ func Test_main(t *testing.T) {
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
 
-	fmt.Println((*s.Get(0)).Value())
-	fmt.Println((*s.Get(3)).Value())
+	fmt.Println((s.Get(0)).Value())
+	fmt.Println((s.Get(3)).Value())
+	fmt.Println((s.Remove(3)).Value())
+	fmt.Println(s.Remove(0).Value())
+
+	fmt.Println(s.ToArray())
+	fmt.Println(s.AllDataCount(), s.Length())
 
 	s.Delete(&v2s)
 	s.Delete(&v6s)
