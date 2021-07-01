@@ -1,16 +1,10 @@
 package SkipLink
 
+import "fmt"
+
 const (
 	DefaultMaxLevel = 8
 )
-
-// Iterator return the iterator for SkipLink, it can be sync and not sync.
-// For sync, it maybe use more memory.
-type Iterator interface {
-	hasNext() bool
-	Next() (interface{}, error)
-	Del() bool
-}
 
 type Sortable interface {
 	IsLessThan(Sortable) (isLess bool)
@@ -62,9 +56,9 @@ func (e *elementNode) findMinLevel() *elementNode {
 
 // elementNode provide vertical access
 type elementNode struct {
-	levelHeaderNode *elementNode
-	childNode       *elementNode
-	parentNode      *elementNode
+	levelHeaderNode *elementNode // now level header
+	childNode       *elementNode // the vertical next node
+	parentNode      *elementNode // the vertical pre node
 	head            *elementNode // head node
 	pre             *elementNode // pre node, head node has no pre node
 	next            *elementNode // next node
@@ -98,7 +92,7 @@ func (h *elementNode) findLessNode(sortable *Sortable) (*elementNode, bool) {
 	}
 
 	now := header.next
-	var res *elementNode = header
+	var res = header
 	for now != nil {
 		if (*now.value).IsLessThan(*sortable) {
 			res = now
@@ -206,8 +200,8 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 		innerNowNode := nowHead
 		innerNextNode := nowHead.next
 		for innerNextNode != nil {
-			if innerNowNode.value != nil {
-				if !(*innerNowNode.value).IsLessThan(*sortable) {
+			if innerNextNode.value != nil {
+				if !(*innerNextNode.value).IsLessThan(*sortable) {
 					break
 				}
 			}
@@ -245,7 +239,32 @@ func (s *SkipLink) Delete(sortable *Sortable) bool {
 
 	return false
 }
+func (s *SkipLink) Get(index uint64) *Sortable {
+	if index >= s.elementCount {
+		panic(fmt.Sprintf("Range out of index for : %d", index))
+	}
 
+	nowNode := s.header.next
+	for index > 0 {
+		index--
+
+		nowNode = nowNode.next
+	}
+
+	return nowNode.value
+}
+func (s *SkipLink) ToSortableArray() []Sortable {
+	value := []Sortable{}
+
+	minHead := s.header.findMinLevel()
+	for minHead != nil {
+		if minHead.value != nil {
+			value = append(value, *minHead.value)
+		}
+		minHead = minHead.next
+	}
+	return value
+}
 func (s *SkipLink) ToArray() []interface{} {
 	value := []interface{}{}
 
@@ -259,9 +278,23 @@ func (s *SkipLink) ToArray() []interface{} {
 	return value
 }
 
-//func (s *SkipLink) Iterator() Iterator {
-//
-//}
-//func (s *SkipLink) SyncIterator() Iterator {
-//
-//}
+// Get all sortable
+func (s *SkipLink) GetAllSortable() [][]Sortable {
+	var reses [][]Sortable
+
+	nowHead := s.header.findMinLevel()
+	for nowHead != nil {
+		value := []Sortable{}
+		minHead := nowHead
+		for minHead != nil {
+			if minHead.value != nil {
+				value = append(value, *minHead.value)
+			}
+			minHead = minHead.next
+		}
+		reses = append(reses, value)
+		nowHead = nowHead.childNode
+	}
+
+	return reses
+}

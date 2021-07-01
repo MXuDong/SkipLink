@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 )
 
 type IntegerSortable struct {
@@ -30,10 +31,11 @@ func (i *IntegerSortable) Value() interface{} {
 }
 
 func Test_main(t *testing.T) {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
 	s := SkipLink{
-		maxLevel: 2,
+		maxLevel: DefaultMaxLevel,
 		hasNextLevel: func() bool {
-			return rand.Int()%2 == 0
+			return r.Int63()%2 == 0
 		},
 	}
 
@@ -57,10 +59,26 @@ func Test_main(t *testing.T) {
 	s.Add(&v2s)
 	s.Add(&v0s)
 	s.Add(&v1s)
+	s.Add(&v1s)
+	s.Add(&v1s)
+	s.Add(&v1s)
+	s.Add(&v1s)
+	s.Add(&v1s)
+	s.Add(&v1s)
+	s.Add(&v1s)
+	s.Add(&v1s)
 	s.Add(&v8s)
 	s.Add(&v9s)
 	s.Add(&v7s)
 	s.Add(&v6s)
+
+	allNode := s.GetAllSortable()
+	for _, item := range allNode {
+		for _, value := range item {
+			fmt.Print("", value.Value(), " ")
+		}
+		fmt.Println()
+	}
 
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
@@ -80,6 +98,9 @@ func Test_main(t *testing.T) {
 
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
+
+	fmt.Println((*s.Get(0)).Value())
+	fmt.Println((*s.Get(3)).Value())
 
 	s.Delete(&v2s)
 	s.Delete(&v6s)
