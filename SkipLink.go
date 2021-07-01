@@ -139,6 +139,18 @@ type SkipLink struct {
 	hasNextLevel     func() bool
 }
 
+func DefaultSkipLink() SkipLink {
+	return InitSkipLink(DefaultMaxLevel, nil, nil)
+}
+
+func InitSkipLink(maxLevel uint64, valuePackingFunc func(interface{}) (*Sortable, error), hasNextLevel func() bool) SkipLink {
+	return SkipLink{
+		maxLevel:         maxLevel,
+		valuePackingFunc: valuePackingFunc,
+		hasNextLevel:     hasNextLevel,
+	}
+}
+
 func (s *SkipLink) Length() uint64 {
 	return s.elementCount
 }
@@ -179,12 +191,14 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 	nowHead := minHead
 	var nowLevel uint64 = 1
 	for s.hasNextLevel() {
+		nowLevel++
 		if nowHead.childNode == nil {
-			if nowLevel > s.maxLevel {
+			if nowLevel >= s.maxLevel {
 				break
 			}
 			nowHead = nowHead.addChildNode()
 			s.allElementCount++
+
 		} else {
 			nowHead = nowHead.childNode
 		}
@@ -217,12 +231,12 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 }
 func (s *SkipLink) Delete(sortable *Sortable) bool {
 	node, ok := s.header.findLessNode(sortable)
-	if !ok{
+	if !ok {
 		return false
 	}
 	s.elementCount--
 	nowNode := node
-	for nowNode != nil{
+	for nowNode != nil {
 		tmp := nowNode.childNode
 		nowNode.del()
 		nowNode = tmp

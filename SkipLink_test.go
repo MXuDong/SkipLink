@@ -11,14 +11,14 @@ type IntegerSortable struct {
 }
 
 func (i *IntegerSortable) IsLessThan(valueI Sortable) (isLess bool) {
-	value, ok :=(valueI.Value()).(int64)
+	value, ok := (valueI.Value()).(int64)
 	if !ok {
 		return false
 	}
 	return i.value < value
 }
 func (i *IntegerSortable) IsEquals(valueI Sortable) (isEquals bool) {
-	value, ok :=(valueI.Value()).(int64)
+	value, ok := (valueI.Value()).(int64)
 	if !ok {
 		return false
 	}
@@ -31,7 +31,7 @@ func (i *IntegerSortable) Value() interface{} {
 
 func Test_main(t *testing.T) {
 	s := SkipLink{
-		maxLevel: 1,
+		maxLevel: 2,
 		hasNextLevel: func() bool {
 			return rand.Int()%2 == 0
 		},
@@ -63,17 +63,28 @@ func Test_main(t *testing.T) {
 	s.Add(&v6s)
 
 	fmt.Println(s.ToArray())
+	fmt.Println(s.AllDataCount(), s.Length())
 	s.Delete(&v0s)
 
-
 	fmt.Println(s.ToArray())
+	fmt.Println(s.AllDataCount(), s.Length())
 	s.Delete(&v1s)
 
 	fmt.Println(s.ToArray())
+	fmt.Println(s.AllDataCount(), s.Length())
 	s.Delete(&v9s)
 
 	fmt.Println(s.ToArray())
+	fmt.Println(s.AllDataCount(), s.Length())
 	s.Delete(&v0s)
 
 	fmt.Println(s.ToArray())
+	fmt.Println(s.AllDataCount(), s.Length())
+
+	s.Delete(&v2s)
+	s.Delete(&v6s)
+	s.Delete(&v7s)
+	s.Delete(&v8s)
+	fmt.Println(s.ToArray())
+	fmt.Println(s.AllDataCount(), s.Length())
 }
