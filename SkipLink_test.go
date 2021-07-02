@@ -2,9 +2,7 @@ package SkipLink
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
-	"time"
 )
 
 type IntegerSortable struct {
@@ -39,13 +37,8 @@ func Test_main(t *testing.T) {
 	}
 	f(is)
 
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	s := SkipLink{
-		maxLevel: DefaultMaxLevel,
-		hasNextLevel: func() bool {
-			return r.Int()%2 == 0
-		},
-	}
+	// if value packing func is nil, is dangerous
+	s := InitSkipLink(8, nil, GeneratorDefaultHasNextLevelFunc())
 
 	v0 := IntegerSortable{value: 0}
 	v1 := IntegerSortable{value: 1}
