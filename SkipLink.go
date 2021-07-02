@@ -246,8 +246,9 @@ func (s *SkipLink) MaxLevel() uint64 {
 	return s.maxLevel
 }
 
-// Add the value, if not inert into the skip link, return false
-func (s *SkipLink) Add(sortable *Sortable) bool {
+// AddSortable the value, if not inert into the skip link, return false.
+// If don't know packing behavior, please don't use this function.
+func (s *SkipLink) AddSortable(sortable *Sortable) bool {
 	if s.header == nil {
 		s.header = &elementNode{
 			level: 0,
@@ -324,18 +325,20 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 	return true
 }
 
-// AddValue like add func, it will packing the input value to sortable by init param: valuePackingFunc
-func (s *SkipLink) AddValue(value interface{}) bool {
+// Add like AddSortable func, it will packing the input value to sortable by init param: valuePackingFunc
+// For some packaging methods, using Add will be more stable, it is recommended to use this method,
+// unless necessary, please do not use the AddSortable method
+func (s *SkipLink) Add(value interface{}) bool {
 	v, err := s.valuePackingFunc(value)
 	if err != nil {
 		return false
 	}
 
-	return s.Add(v)
+	return s.AddSortable(v)
 }
 
-// Delete the value, if not find into the skip link, return false
-func (s *SkipLink) Delete(sortable *Sortable) bool {
+// DeleteSortable the value, if not find into the skip link, return false
+func (s *SkipLink) DeleteSortable(sortable *Sortable) bool {
 	node, ok := s.header.findLessNode(sortable)
 	if !ok {
 		return false
@@ -352,14 +355,14 @@ func (s *SkipLink) Delete(sortable *Sortable) bool {
 	return false
 }
 
-// DeleteValue will delete target value, it will packing the input value to sortable by init param: valuePackingFunc
-func (s *SkipLink) DeleteValue(value interface{}) bool {
+// Delete will delete target value, it will packing the input value to sortable by init param: valuePackingFunc
+func (s *SkipLink) Delete(value interface{}) bool {
 	v, err := s.valuePackingFunc(value)
 	if err != nil {
 		return false
 	}
 
-	return s.Delete(v)
+	return s.DeleteSortable(v)
 }
 
 // Get return the value which index is equals

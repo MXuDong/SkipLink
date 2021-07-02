@@ -8,7 +8,7 @@ import (
 
 func Test_main(t *testing.T) {
 	s := SkipLink.InitSkipLink(SkipLink.DefaultMaxLevel, NumberSortableImplementPacking, SkipLink.GeneratorDefaultHasNextLevelFunc())
-	s.AddValue(1)
-	s.AddValue(123)
+	s.Add(1)
+	s.Add(123)
 	fmt.Println(s.ToArray())
 }

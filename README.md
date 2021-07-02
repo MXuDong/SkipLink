@@ -18,8 +18,6 @@ Common usage, without packing func. Alse see [SkipLink_Test.go](./SkipLink_test.
 
 ```go
 
-func Test_main(t *testing.T) {
-
 	var is int64 = 1
 
 	f := func(x interface{}) {
@@ -46,22 +44,22 @@ func Test_main(t *testing.T) {
 	v7s := Sortable(&v7)
 	v6s := Sortable(&v6)
 
-	s.Add(&v1s)
-	s.Add(&v2s)
-	s.Add(&v0s)
-	s.Add(&v1s)
-	s.Add(&v1s)
-	s.Add(&v1s)
-	s.Add(&v1s)
-	s.Add(&v1s)
-	s.Add(&v1s)
-	s.Add(&v1s)
-	s.Add(&v1s)
-	s.Add(&v1s)
-	s.Add(&v8s)
-	s.Add(&v9s)
-	s.Add(&v7s)
-	s.Add(&v6s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v2s)
+	s.AddSortable(&v0s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v1s)
+	s.AddSortable(&v8s)
+	s.AddSortable(&v9s)
+	s.AddSortable(&v7s)
+	s.AddSortable(&v6s)
 
 	allNode := s.GetAllSortable()
 	for _, item := range allNode {
@@ -73,19 +71,19 @@ func Test_main(t *testing.T) {
 
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
-	s.Delete(&v0s)
+	s.DeleteSortable(&v0s)
 
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
-	s.Delete(&v1s)
+	s.DeleteSortable(&v1s)
 
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
-	s.Delete(&v9s)
+	s.DeleteSortable(&v9s)
 
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
-	s.Delete(&v0s)
+	s.DeleteSortable(&v0s)
 
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
@@ -98,12 +96,10 @@ func Test_main(t *testing.T) {
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
 
-	s.Delete(&v2s)
-	s.Delete(&v6s)
-	s.Delete(&v7s)
-	s.Delete(&v8s)
+	s.DeleteSortable(&v2s)
+	s.DeleteSortable(&v6s)
+	s.DeleteSortable(&v7s)
+	s.DeleteSortable(&v8s)
 	fmt.Println(s.ToArray())
 	fmt.Println(s.AllDataCount(), s.Length())
-}
 ```
-
