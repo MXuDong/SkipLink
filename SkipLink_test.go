@@ -11,19 +11,19 @@ type IntegerSortable struct {
 	value int64
 }
 
-func (i *IntegerSortable) IsLessThan(valueI Sortable) (isLess bool) {
+func (i *IntegerSortable) IsLessThan(valueI Sortable) (isLess bool, err error) {
 	value, ok := (valueI.Value()).(int64)
 	if !ok {
-		return false
+		return false, nil
 	}
-	return i.value < value
+	return i.value < value, nil
 }
-func (i *IntegerSortable) IsEquals(valueI Sortable) (isEquals bool) {
+func (i *IntegerSortable) IsEquals(valueI Sortable) (isEquals bool, err error) {
 	value, ok := (valueI.Value()).(int64)
 	if !ok {
-		return false
+		return false, nil
 	}
-	return i.value == value
+	return i.value == value, nil
 }
 
 func (i *IntegerSortable) Value() interface{} {
@@ -31,6 +31,14 @@ func (i *IntegerSortable) Value() interface{} {
 }
 
 func Test_main(t *testing.T) {
+
+	var is int64 = 1
+
+	f := func(x interface{}) {
+		fmt.Println(float64(x.(int64)))
+	}
+	f(is)
+
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	s := SkipLink{
 		maxLevel: DefaultMaxLevel,

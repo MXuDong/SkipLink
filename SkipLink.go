@@ -25,11 +25,15 @@ type Sortable interface {
 	//    |           |         |         |
 	// header11 - > node11 -> node12 -> node13 -> node14
 	// the node11 should less than node 12
-	IsLessThan(Sortable) (isLess bool)
+	//
+	// If has error(such like type not equals), the value will ignore
+	IsLessThan(Sortable) (isLess bool, err error)
 
 	// If the target data can't append to the SkipLink, return true.
 	// The inner implement, if datas are equal, only one will save.
-	IsEquals(Sortable) (isEquals bool)
+	//
+	// If has error(such like type not equals), the value will ignore
+	IsEquals(Sortable) (isEquals bool, err error)
 
 	// Return the target value.
 	Value() interface{}
@@ -146,11 +150,19 @@ func (h *elementNode) findLessNode(sortable *Sortable) (*elementNode, bool) {
 	now := header.next
 	var res = header
 	for now != nil {
-		if (*now.value).IsLessThan(*sortable) {
+		isLessThan, err := (*now.value).IsLessThan(*sortable)
+		if err != nil {
+			return nil, false
+		}
+		isEquals, err := (*now.value).IsEquals(*sortable)
+		if err != nil {
+			return nil, false
+		}
+		if isLessThan {
 			res = now
 			now = now.next
 			continue
-		} else if (*now.value).IsEquals(*sortable) {
+		} else if isEquals {
 			res = now
 			return res.findMinLevel(), true
 		} else {
@@ -232,7 +244,8 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 	minHead := s.header.findMinLevel()
 
 	node, isEquals := s.header.findLessNode(sortable)
-	if isEquals {
+	// equals || type not equals
+	if isEquals || node == nil {
 		return false
 	}
 
@@ -269,7 +282,13 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 		innerNextNode := nowHead.next
 		for innerNextNode != nil {
 			if innerNextNode.value != nil {
-				if !(*innerNextNode.value).IsLessThan(*sortable) {
+				isLessThan, err := (*innerNextNode.value).IsLessThan(*sortable)
+				// the type not equals, return false
+				if err != nil {
+					return false
+				}
+
+				if !isLessThan {
 					break
 				}
 			}
