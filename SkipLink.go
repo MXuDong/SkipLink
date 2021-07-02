@@ -6,10 +6,7 @@ import (
 	"time"
 )
 
-const (
-	// The default max level
-	DefaultMaxLevel = 8
-)
+const ()
 
 // In the node, all value must packing to this struct.
 // Sortable is one data of the SkipLink.

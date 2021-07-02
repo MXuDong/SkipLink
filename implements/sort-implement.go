@@ -2,6 +2,7 @@ package implements
 
 import (
 	"errors"
+	"fmt"
 	"mxudong.github.io/SkipLink"
 )
 
@@ -52,7 +53,7 @@ type NumberSortableImplement struct {
 func (n *NumberSortableImplement) IsLessThan(sortable SkipLink.Sortable) (bool, error) {
 	nsi, ok := sortable.(*NumberSortableImplement)
 	if !ok {
-		return false, errors.New("Input type not the 'NumberSortableImplement' ")
+		return false, errors.New(fmt.Sprintf(SkipLink.SortableTypeError, "NumberSortableImplement"))
 	}
 	f1 := n.value.(float64)
 	f2 := nsi.value.(float64)
@@ -63,7 +64,7 @@ func (n *NumberSortableImplement) IsLessThan(sortable SkipLink.Sortable) (bool, 
 func (n *NumberSortableImplement) IsEquals(sortable SkipLink.Sortable) (bool, error) {
 	nsi, ok := sortable.(*NumberSortableImplement)
 	if !ok {
-		return false, errors.New("Input type not the 'NumberSortableImplement' ")
+		return false, errors.New(fmt.Sprintf(SkipLink.SortableTypeError, "NumberSortableImplement"))
 	}
 	return nsi.value == sortable.Value(), nil
 }
