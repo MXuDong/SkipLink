@@ -1,4 +1,10 @@
-# Skip link implement by golang
+# Skip link implement by golang 
+**！`UNAVAILABLE NOW` !**
+
+I do not recommend that you use the project directly, it may have a lot of unknown problems, because the project itself 
+is implemented quickly, and it has not gone through a complete design phase and testing phase.
+Most of the realizations are my own imagination. The library will be refactored later.
+I will mark the unavailable status until the project has a complete development process and credible test results.
 
 ## Sortable
 
