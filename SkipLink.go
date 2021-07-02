@@ -228,6 +228,9 @@ func InitSkipLink(maxLevel uint64, valuePackingFunc func(interface{}) (*Sortable
 		maxLevel:         maxLevel,
 		valuePackingFunc: valuePackingFunc,
 		hasNextLevel:     hasNextLevel,
+		header: &elementNode{
+			level: 0,
+		},
 	}
 }
 
@@ -324,6 +327,16 @@ func (s *SkipLink) Add(sortable *Sortable) bool {
 	return true
 }
 
+// AddValue like add func, it will packing the input value to sortable by init param: valuePackingFunc
+func (s *SkipLink) AddValue(value interface{}) bool {
+	v, err := s.valuePackingFunc(value)
+	if err != nil {
+		return false
+	}
+
+	return s.Add(v)
+}
+
 // Delete the value, if not find into the skip link, return false
 func (s *SkipLink) Delete(sortable *Sortable) bool {
 	node, ok := s.header.findLessNode(sortable)
@@ -340,6 +353,16 @@ func (s *SkipLink) Delete(sortable *Sortable) bool {
 	}
 
 	return false
+}
+
+// DeleteValue will delete target value, it will packing the input value to sortable by init param: valuePackingFunc
+func (s *SkipLink) DeleteValue(value interface{}) bool {
+	v, err := s.valuePackingFunc(value)
+	if err != nil {
+		return false
+	}
+
+	return s.Delete(v)
 }
 
 // Get return the value which index is equals

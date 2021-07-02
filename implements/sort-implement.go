@@ -41,7 +41,7 @@ func NumberSortableImplementPacking(value interface{}) (*SkipLink.Sortable, erro
 		value: number,
 	})
 
-	return &n, errors.New("Input value not a number ")
+	return &n, nil
 }
 
 // For any number, tru to convert to float64, and return some res.
