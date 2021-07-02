@@ -1,6 +1,10 @@
 package SkipLink
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
 
 const (
 	// The default max level
@@ -202,12 +206,21 @@ type SkipLink struct {
 
 	// This function determines whether the current data should continue to grow，but the grow high be limit by
 	// maxLevel, if there is no clear requirement in the implementation to formulate the return data, please try
-	// to use the default function.
+	// to use the default function: GeneratorDefaultHasNextLevelFunc() -> func() bool
 	hasNextLevel func() bool
 }
 
+// GeneratorDefaultHasNextLevelFunc return a func to return random result in bool (true and false)
+func GeneratorDefaultHasNextLevelFunc() func() bool {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	return func() bool {
+		// random result
+		return r.Int()%2 == 0
+	}
+}
+
 func DefaultSkipLink() SkipLink {
-	return InitSkipLink(DefaultMaxLevel, nil, nil)
+	return InitSkipLink(DefaultMaxLevel, nil, GeneratorDefaultHasNextLevelFunc())
 }
 
 func InitSkipLink(maxLevel uint64, valuePackingFunc func(interface{}) (*Sortable, error), hasNextLevel func() bool) SkipLink {
