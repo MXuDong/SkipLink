@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const ()
+type PackingFunc func(interface{}) (*Sortable, error)
 
 // In the node, all value must packing to this struct.
 // Sortable is one data of the SkipLink.
@@ -199,7 +199,7 @@ type SkipLink struct {
 	allElementCount uint64
 
 	// value packing func to packing the input value, and return the a sortable value
-	valuePackingFunc func(interface{}) (*Sortable, error)
+	valuePackingFunc PackingFunc
 
 	// This function determines whether the current data should continue to grow，but the grow high be limit by
 	// maxLevel, if there is no clear requirement in the implementation to formulate the return data, please try
@@ -216,11 +216,11 @@ func GeneratorDefaultHasNextLevelFunc() func() bool {
 	}
 }
 
-func DefaultSkipLink(packingFunc func(interface{}) (*Sortable, error)) SkipLink {
+func DefaultSkipLink(packingFunc PackingFunc) SkipLink {
 	return InitSkipLink(DefaultMaxLevel, packingFunc, GeneratorDefaultHasNextLevelFunc())
 }
 
-func InitSkipLink(maxLevel uint64, valuePackingFunc func(interface{}) (*Sortable, error), hasNextLevel func() bool) SkipLink {
+func InitSkipLink(maxLevel uint64, valuePackingFunc PackingFunc, hasNextLevel func() bool) SkipLink {
 	return SkipLink{
 		maxLevel:         maxLevel,
 		valuePackingFunc: valuePackingFunc,
