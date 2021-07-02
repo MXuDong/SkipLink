@@ -1,452 +1,210 @@
 package SkipLink
 
-import (
-	"fmt"
-	"math/rand"
-	"time"
-)
-
-type PackingFunc func(interface{}) (*Sortable, error)
-
-// In the node, all value must packing to this struct.
-// Sortable is one data of the SkipLink.
-//
-// Different implementations can form different data structures, such as stacks and queues.
-// If the implementations strictly follow the requirements to achieve the sorting ability.
-//
-// The head is right of all data.
 type Sortable interface {
-
-	// If the source data should appear on the right side of the target data
-	// Such like 3 < 4, so in the list is 'head ... 3 ... 4 ... '
-	// Example:
-	// header33 - > node31 -----------> node33
-	//    |           |                   |
-	// header22 - > node21 -> node22 -> node23
-	//    |           |         |         |
-	// header11 - > node11 -> node12 -> node13 -> node14
-	// the node11 should less than node 12
-	//
-	// If has error(such like type not equals), the value will ignore
-	IsLessThan(Sortable) (isLess bool, err error)
-
-	// If the target data can't append to the SkipLink, return true.
-	// The inner implement, if datas are equal, only one will save.
-	//
-	// If has error(such like type not equals), the value will ignore
-	IsEquals(Sortable) (isEquals bool, err error)
-
-	// Return the target value.
-	Value() interface{}
 }
 
-// del will remove this single node, link next to pre node.
-func (i *elementNode) del() {
-	if i.pre != nil {
-		i.pre.next = i.next
-	}
-	if i.next != nil {
-		i.next.pre = i.pre
-	}
+// NodeValue packed value in the LinkNode
+type NodeValue interface {
+	Key() Sortable      // to get key in the NodeValue, the key should implement the interface: Sortable
+	Value() interface{} // to get value in the node value, can be every thing
 }
 
-// appendNext will append node to header of next-list
-// Such like link: header1 -> node1 -> node3, invoke : node1.appendNext(node2)
-//           res : header1 -> node1 -> node2 -> node3
-func (i *elementNode) appendNext(node *elementNode) *elementNode {
-	node.pre = i
-	node.next = i.next
-	if i.next != nil {
-		i.next.pre = node
-	}
-	i.next = node
-	return node
+// LinkNode is the unit that makes up SkipLink
+type LinkNode struct {
+	vPre  *LinkNode // vertical pre node
+	hPre  *LinkNode // horizontal pre node
+	vNext *LinkNode // vertical next node
+	hNext *LinkNode // horizontal next node
+
+	value NodeValue // the node value
+	level uint64    // the node level in vertical
 }
 
-// appendPre will append node to end of pre-list, if is header, it will append fail
-// Such like link : header1 -> node2 -> node3, invoke : node2.appendPre(node1)
-//           res  : header1 -> node1 -> node2 -> node3
-func (i *elementNode) appendPre(node *elementNode) bool {
-	if i.pre == nil {
+// ================ add node methods
+// Add target node to l vPre, and set level -1
+// if the level already in l is zero, will append fail
+func (l *LinkNode) AddNodeToVPre(ln *LinkNode) bool {
+	// if ln is nil, do nothing
+	if ln == nil {
+		// add fail
 		return false
 	}
-	node.pre = i.pre
-	node.next = i
-	if i.pre != nil {
-		i.pre.next = node
+	if l.level == 0 {
+		// level limit
+		return false
 	}
-	i.pre = node
+
+	ln.vPre = l.vPre
+	if l.vPre != nil {
+		l.vPre.vNext = ln
+	}
+	ln.vNext = l
+	l.vPre = ln
+	ln.level = l.level - 1
 	return true
 }
 
-// findMinLevel will return the now node's min level node.
-// Example:
-// header33 - > node31 -----------> node33
-//    |           |                   |
-// header22 - > node21 -> node22 -> node23
-//    |           |         |         |
-// header11 - > node11 -> node12 -> node13 -> node14
-//
-// the header33's min level node is header11, the node33's min level node is node13
-func (e *elementNode) findMinLevel() *elementNode {
-	if e.parentNode == nil {
-		return e
-	}
-	return e.parentNode.findMinLevel()
-}
-
-// elementNode provide vertical access, the link node base.
-// The SkipLink's data will packing into elementNode.value.
-type elementNode struct {
-	levelHeaderNode *elementNode // now level header
-	childNode       *elementNode // the vertical next node
-	parentNode      *elementNode // the vertical pre node
-	head            *elementNode // head node
-	pre             *elementNode // pre node, head node has no pre node
-	next            *elementNode // next node
-	value           *Sortable    // the value of this node, header node has no value
-	isUsed          bool         // to quick delete, but not delete value
-	level           uint64
-}
-
-// createChildNode will create empty node and append source node.
-// Such like:
-// header2
-//    |
-// header1
-//
-// invoke the header2's createChildNode
-//
-// header3
-//    |
-// header2
-//    |
-// header1
-//
-// Note that, the createChildNode will cover origin node, it is dangerous.
-func (h *elementNode) createChildNode() *elementNode {
-	hItem := elementNode{
-		level:           h.level + 1,
-		parentNode:      h,
-		childNode:       nil,
-		isUsed:          false,
-		pre:             nil,
-		next:            nil,
-		levelHeaderNode: nil,
-	}
-	h.childNode = &hItem
-	return &hItem
-}
-
-// find less node, and return min level node, if is equals, return now node and true, else return less node and false
-func (h *elementNode) findLessNode(sortable *Sortable) (*elementNode, bool) {
-	header := h
-	for header.next == nil {
-		if header.parentNode == nil {
-			return h, false
-		}
-		header = header.parentNode
-	}
-
-	now := header.next
-	var res = header
-	for now != nil {
-		isLessThan, err := (*now.value).IsLessThan(*sortable)
-		if err != nil {
-			return nil, false
-		}
-		isEquals, err := (*now.value).IsEquals(*sortable)
-		if err != nil {
-			return nil, false
-		}
-		if isLessThan {
-			res = now
-			now = now.next
-			continue
-		} else if isEquals {
-			res = now
-			return res.findMinLevel(), true
-		} else {
-			if now.pre != nil {
-				now = now.pre
-				now = now.parentNode
-			} else {
-				return nil, false
-			}
-		}
-	}
-	return res.findMinLevel(), false
-}
-
-// SkipLink, the skip link can use as Stack, queue, Single link by different Sortable-Implementations.
-// The maxLevel limit the high of SkipLink.
-// All of the SkipLink func is not sync, it mean that dangerous in a multi-threaded environment.
-type SkipLink struct {
-
-	// maxLevel limit the max level of skip link, if maxLevel is zero, it is seem as 1
-	// When maxLevel is 1, the skip will downgrade to the doubly link list.
-	// this value can't change after init.
-	// Default is DefaultMaxLevel
-	maxLevel uint64
-
-	// header is all link list header.
-	header *elementNode
-
-	// all valid data count
-	elementCount uint64
-
-	// all data count, more than elementCount
-	allElementCount uint64
-
-	// value packing func to packing the input value, and return the a sortable value
-	valuePackingFunc PackingFunc
-
-	// This function determines whether the current data should continue to grow，but the grow high be limit by
-	// maxLevel, if there is no clear requirement in the implementation to formulate the return data, please try
-	// to use the default function: GeneratorDefaultHasNextLevelFunc() -> func() bool
-	hasNextLevel func() bool
-}
-
-// GeneratorDefaultHasNextLevelFunc return a func to return random result in bool (true and false)
-func GeneratorDefaultHasNextLevelFunc() func() bool {
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	return func() bool {
-		// random result
-		return r.Int()%2 == 0
-	}
-}
-
-func DefaultSkipLink(packingFunc PackingFunc) SkipLink {
-	return InitSkipLink(DefaultMaxLevel, packingFunc, GeneratorDefaultHasNextLevelFunc())
-}
-
-func InitSkipLink(maxLevel uint64, valuePackingFunc PackingFunc, hasNextLevel func() bool) SkipLink {
-	return SkipLink{
-		maxLevel:         maxLevel,
-		valuePackingFunc: valuePackingFunc,
-		hasNextLevel:     hasNextLevel,
-		header: &elementNode{
-			level: 0,
-		},
-	}
-}
-
-// Length return the number of valid data
-func (s *SkipLink) Length() uint64 {
-	return s.elementCount
-}
-
-// AllDataCount return the number of all node, it is great than Length()
-func (s *SkipLink) AllDataCount() uint64 {
-	return s.allElementCount
-}
-
-// MaxLevel return the SkipLink's max level
-func (s *SkipLink) MaxLevel() uint64 {
-	return s.maxLevel
-}
-
-// AddSortable the value, if not inert into the skip link, return false.
-// If don't know packing behavior, please don't use this function.
-func (s *SkipLink) AddSortable(sortable *Sortable) bool {
-	if s.header == nil {
-		s.header = &elementNode{
-			level: 0,
-		}
-		s.allElementCount++
-	}
-	minHead := s.header.findMinLevel()
-
-	node, isEquals := s.header.findLessNode(sortable)
-	// equals || type not equals
-	if isEquals || node == nil {
+// Add target node to l hPre, and set level
+func (l *LinkNode) AddNodeToHPre(ln *LinkNode) bool {
+	if ln == nil {
 		return false
 	}
 
-	beAppendNode := &elementNode{
-		levelHeaderNode: minHead,
-		childNode:       nil,
-		parentNode:      nil,
-		value:           sortable,
-		isUsed:          true,
-		head:            nil,
+	ln.hPre = l.hPre
+	if l.hPre != nil {
+		l.hPre.hNext = ln
 	}
-
-	valueNode := node.findMinLevel().appendNext(beAppendNode)
-	s.allElementCount++
-	s.elementCount++
-
-	// graw add
-	nowHead := minHead
-	var nowLevel uint64 = 1
-	for s.hasNextLevel() {
-		nowLevel++
-		if nowHead.childNode == nil {
-			if nowLevel >= s.maxLevel {
-				break
-			}
-			nowHead = nowHead.createChildNode()
-			s.allElementCount++
-
-		} else {
-			nowHead = nowHead.childNode
-		}
-
-		innerNowNode := nowHead
-		innerNextNode := nowHead.next
-		for innerNextNode != nil {
-			if innerNextNode.value != nil {
-				isLessThan, err := (*innerNextNode.value).IsLessThan(*sortable)
-				// the type not equals, return false
-				if err != nil {
-					return false
-				}
-
-				if !isLessThan {
-					break
-				}
-			}
-			innerNowNode = innerNextNode
-			innerNextNode = innerNowNode.next
-		}
-		beAppendNode := &elementNode{
-			levelHeaderNode: nowHead,
-			childNode:       nil,
-			parentNode:      valueNode,
-			value:           sortable,
-			isUsed:          true,
-			head:            nil,
-		}
-		valueNode.childNode = beAppendNode
-		innerNowNode.appendNext(beAppendNode)
-		valueNode = valueNode.childNode
-		s.allElementCount++
-	}
+	ln.hNext = l
+	l.hPre = ln
+	ln.level = l.level
 	return true
 }
 
-// Add like AddSortable func, it will packing the input value to sortable by init param: valuePackingFunc
-// For some packaging methods, using Add will be more stable, it is recommended to use this method,
-// unless necessary, please do not use the AddSortable method
-func (s *SkipLink) Add(value interface{}) bool {
-	v, err := s.valuePackingFunc(value)
-	if err != nil {
+// Add target node to l vNext, and set level + 1
+func (l *LinkNode) AddNodeToVNext(ln *LinkNode) bool {
+	if ln == nil {
 		return false
 	}
 
-	return s.AddSortable(v)
+	ln.vNext = l.vNext
+	if l.vNext != nil {
+		l.vNext.vPre = ln
+	}
+	ln.vPre = l
+	l.vNext = ln
+	ln.level = l.level + 1
+	return true
 }
 
-// DeleteSortable the value, if not find into the skip link, return false
-func (s *SkipLink) DeleteSortable(sortable *Sortable) bool {
-	node, ok := s.header.findLessNode(sortable)
-	if !ok {
-		return false
-	}
-	s.elementCount--
-	nowNode := node
-	for nowNode != nil {
-		tmp := nowNode.childNode
-		nowNode.del()
-		nowNode = tmp
-		s.allElementCount--
-	}
-
-	return false
-}
-
-// Delete will delete target value, it will packing the input value to sortable by init param: valuePackingFunc
-func (s *SkipLink) Delete(value interface{}) bool {
-	v, err := s.valuePackingFunc(value)
-	if err != nil {
+// Add target node to l hNext, and set level
+func (l *LinkNode) AddNodeToHNext(ln *LinkNode) bool {
+	if ln == nil {
 		return false
 	}
 
-	return s.DeleteSortable(v)
+	ln.hNext = l.hNext
+	if l.hNext != nil {
+		l.hNext.hPre = ln
+	}
+	ln.hPre = l
+	l.hNext = ln
+	ln.level = l.level
+	return true
 }
 
-// Get return the value which index is equals
-func (s *SkipLink) Get(index uint64) Sortable {
-	if index >= s.elementCount {
-		panic(fmt.Sprintf("Range out of index for : %d", index))
+// invoke AddNodeMethod to add value
+func createNodeAndTryToAdd(value NodeValue, f func(node *LinkNode) bool) (*LinkNode, bool) {
+	ln := &LinkNode{
+		value: value,
 	}
-
-	nowNode := s.header.findMinLevel().next
-	for index > 0 {
-		index--
-
-		nowNode = nowNode.next
+	if f(ln) {
+		return ln, true
 	}
-
-	return *nowNode.value
+	return nil, false
 }
 
-// Remove will remove the target value
-func (s *SkipLink) Remove(index uint64) Sortable {
-	if index >= s.elementCount {
-		panic(fmt.Sprintf("Range out of index for : %d", index))
-	}
-
-	nowNode := s.header.findMinLevel().next
-	for index > 0 {
-		index--
-		nowNode = nowNode.next
-	}
-	value := nowNode.value
-	for nowNode != nil {
-		s.allElementCount--
-		nowNode.del()
-		nowNode = nowNode.childNode
-	}
-	s.elementCount--
-	return *value
+// Add value to vPre, and if success, return be added node
+func (l *LinkNode) AddValueToVPre(value NodeValue) (*LinkNode, bool) {
+	return createNodeAndTryToAdd(value, l.AddNodeToVPre)
 }
 
-// ToSortableArray return the array of Sortable
-func (s *SkipLink) ToSortableArray() []Sortable {
-	value := []Sortable{}
-
-	minHead := s.header.findMinLevel()
-	for minHead != nil {
-		if minHead.value != nil {
-			value = append(value, *minHead.value)
-		}
-		minHead = minHead.next
-	}
-	return value
+// Add value to hPre, and if success, return be added node
+func (l *LinkNode) AddValueToHPre(value NodeValue) (*LinkNode, bool) {
+	return createNodeAndTryToAdd(value, l.AddNodeToHPre)
 }
 
-// ToArray return all the value
-func (s *SkipLink) ToArray() []interface{} {
-	value := []interface{}{}
-
-	minHead := s.header.findMinLevel()
-	for minHead != nil {
-		if minHead.value != nil {
-			value = append(value, (*minHead.value).Value())
-		}
-		minHead = minHead.next
-	}
-	return value
+// Add value to vNext, and if success, return be added node
+func (l *LinkNode) AddValueToVNext(value NodeValue) (*LinkNode, bool) {
+	return createNodeAndTryToAdd(value, l.AddNodeToVNext)
 }
 
-// Get all sortable, return all node as array.
-func (s *SkipLink) GetAllSortable() [][]Sortable {
-	var reses [][]Sortable
+// Add value to hNext, and if success, return be added node
+func (l *LinkNode) AddValueToHNext(value NodeValue) (*LinkNode, bool) {
+	return createNodeAndTryToAdd(value, l.AddNodeToHNext)
+}
 
-	nowHead := s.header.findMinLevel()
-	for nowHead != nil {
-		value := []Sortable{}
-		minHead := nowHead
-		for minHead != nil {
-			if minHead.value != nil {
-				value = append(value, *minHead.value)
-			}
-			minHead = minHead.next
-		}
-		reses = append(reses, value)
-		nowHead = nowHead.childNode
+// create a empty node and append to vPre, return itself
+func (l *LinkNode) GeneratorEmptyToVPre() (*LinkNode, bool) {
+	return l.AddValueToVPre(nil)
+}
+
+// create a empty node and append to hPre, return itself
+func (l *LinkNode) GeneratorEmptyToHPre() (*LinkNode, bool) {
+	return l.AddValueToHPre(nil)
+}
+
+// create a empty node and append to vNext, return itself
+func (l *LinkNode) GeneratorEmptyToVNext() (*LinkNode, bool) {
+	return l.AddValueToVNext(nil)
+}
+
+// create a empty node and append to hNext, return itself
+func (l *LinkNode) GeneratorEmptyToHNext() (*LinkNode, bool) {
+	return l.AddValueToHNext(nil)
+}
+
+// ================ delete node methods (delete itSelf)
+func (l *LinkNode) Delete() {
+	if l.vNext != nil {
+		l.vNext.vPre = l.vPre
 	}
+	if l.vPre != nil {
+		l.vPre.vNext = l.vNext
+	}
+	if l.hNext != nil {
+		l.hNext.hPre = l.hPre
+	}
+	if l.hPre != nil {
+		l.hPre.hNext = l.hNext
+	}
+}
 
-	return reses
+// =============== search
+func (l *LinkNode) VHead() *LinkNode {
+	if l.vPre != nil {
+		return l.vPre.VHead()
+	}
+	return l
+}
+
+func (l *LinkNode) VEnd() *LinkNode {
+	if l.vNext != nil {
+		return l.vNext.VEnd()
+	}
+	return l
+}
+
+func (l *LinkNode) HHead() *LinkNode {
+	if l.hPre != nil {
+		return l.hPre.HHead()
+	}
+	return l
+}
+
+func (l *LinkNode) HEnd() *LinkNode {
+	if l.hNext != nil {
+		return l.hNext.HEnd()
+	}
+	return l
+}
+
+// ================== value method
+// GetNodeValue will return value of LinkNode
+func (l *LinkNode) GetNodeValue() interface{} {
+	if l.value == nil {
+		return nil
+	}
+	return l.value.Value()
+}
+
+// GetNodeKey will return key of LinkNode, the Key should implement Sortable
+func (l *LinkNode) GetNodeKey() Sortable {
+	if l.value == nil {
+		return nil
+	}
+	return l.value.Key()
+}
+
+func (l *LinkNode) Level() uint64 {
+	return l.level
 }
