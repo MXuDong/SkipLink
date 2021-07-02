@@ -190,7 +190,7 @@ func (l *LinkNode) HEnd() *LinkNode {
 
 // ================== value method
 // GetNodeValue will return value of LinkNode
-func (l *LinkNode) GetNodeValue() interface{} {
+func (l *LinkNode) Value() interface{} {
 	if l.value == nil {
 		return nil
 	}
@@ -198,7 +198,7 @@ func (l *LinkNode) GetNodeValue() interface{} {
 }
 
 // GetNodeKey will return key of LinkNode, the Key should implement Sortable
-func (l *LinkNode) GetNodeKey() Sortable {
+func (l *LinkNode) Key() Sortable {
 	if l.value == nil {
 		return nil
 	}
