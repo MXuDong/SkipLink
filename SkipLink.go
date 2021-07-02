@@ -3,6 +3,7 @@ package SkipLink
 import (
 	"fmt"
 	"math/rand"
+	"mxudong.github.io/SkipLink/implements"
 	"time"
 )
 
@@ -217,7 +218,7 @@ func GeneratorDefaultHasNextLevelFunc() func() bool {
 }
 
 func DefaultSkipLink() SkipLink {
-	return InitSkipLink(DefaultMaxLevel, nil, GeneratorDefaultHasNextLevelFunc())
+	return InitSkipLink(DefaultMaxLevel, implements.SingleSortableImplementPacking(), GeneratorDefaultHasNextLevelFunc())
 }
 
 func InitSkipLink(maxLevel uint64, valuePackingFunc func(interface{}) (*Sortable, error), hasNextLevel func() bool) SkipLink {
